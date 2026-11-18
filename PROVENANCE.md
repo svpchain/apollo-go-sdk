@@ -1,28 +1,30 @@
-# 版本与运行环境
+# Versioning and Runtime
 
-## 版本
+English | [简体中文](PROVENANCE.zh-CN.md)
 
-- Module：`github.com/svpchain/apollo-go-sdk`
-- Package：`apollo`
-- 版本：遵循语义化版本，各版本变更见 [版本记录](CHANGELOG.md)
-- Go：1.22 及以上
+## Version
 
-安装方式见 [快速开始](README.md#安装)。
+- Module: `github.com/svpchain/apollo-go-sdk`
+- Package: `apollo`
+- Version: follows semantic versioning; see the [Changelog](CHANGELOG.md) for changes in each release
+- Go: 1.22 or later
 
-## 客户端
+For installation, see [Quick start](README.md#installation).
 
-`Info` 提供市场、盘口、行情、账户、仓位、挂单、成交、费用和历史查询。
+## Clients
 
-`Exchange` 提供下单、批量交易、撤单、改单、平仓、杠杆、逐仓保证金、TWAP、分批订单及 agent 授权。
+`Info` provides queries for markets, the order book, market data, accounts, positions, open orders, fills, fees and history.
 
-## 数据类型
+`Exchange` provides placing orders, batch trading, canceling and modifying orders, closing positions, leverage, isolated margin, TWAP, scaled orders and agent approval.
 
-交易输入的价格、数量和金额使用十进制字符串。RPC 的 64 位整数由 `Uint64` / `Int64` 保持精度，地址使用 `Address`，哈希使用 `Hash`，字节使用 `HexBytes`。
+## Data types
 
-手续费汇总使用十进制整数字符串表示微 USD，适合保存和 JSON 序列化。支持的类型和方法见 [API](docs/API.md)。
+Prices, sizes and amounts in trading inputs are decimal strings. 64-bit integers from RPC keep their precision via `Uint64` / `Int64`; addresses use `Address`, hashes use `Hash`, and bytes use `HexBytes`.
 
-## 接入配置
+Fee summaries express micro-USD as decimal integer strings, suitable for storage and JSON serialization. For supported types and methods, see the [API](docs/API.md).
 
-`endpoint` 使用目标环境的 Apollo HTTP(S) JSON-RPC 地址。交易配置账户 ID、signer 和可信创世哈希。历史查询使用提供 archive 索引的节点，通过 `IndexStatus()` 确认数据高度。
+## Integration configuration
 
-接入新环境时，使用测试账户完成授权、下单、查挂单、撤单和成交核对，再启用持续交易。
+`endpoint` is the target environment's Apollo HTTP(S) JSON-RPC URL. Trading requires an account ID, a signer and a trusted genesis hash. History queries use a node that provides the archive index; confirm the indexed height with `IndexStatus()`.
+
+When integrating with a new environment, use a test account to go through authorization, placing an order, querying open orders, canceling, and checking fills before enabling continuous trading.

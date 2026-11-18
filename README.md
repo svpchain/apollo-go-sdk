@@ -1,27 +1,29 @@
 # Apollo Go SDK
 
-Apollo 的 Go 交易 SDK，通过 HTTP JSON-RPC 提供市场与账户查询、下单、撤单、改单、签名授权和交易结果跟踪。价格、数量、保证金使用十进制字符串。
+English | [简体中文](README.zh-CN.md)
 
-包名为 `apollo`，Go module 为 `github.com/svpchain/apollo-go-sdk`，运行环境为 **Go 1.22+**。
+The Go trading SDK for Apollo. Over HTTP JSON-RPC it provides market and account queries, placing, canceling and modifying orders, signing and authorization, and execution tracking. Prices, sizes and margin are decimal strings.
 
-| 客户端 | 常用方法 |
+The package name is `apollo`, the Go module is `github.com/svpchain/apollo-go-sdk`, and it requires **Go 1.22+**.
+
+| Client | Common methods |
 | --- | --- |
-| `Info` | `Meta`、`L2Snapshot`、`UserState`、`OpenOrders`、`UserFills`、`UserFees` |
-| `Exchange` | `Order`、`BulkOrders`、`BulkModify`、`CancelTwap`、`MarketOpen`、`MarketClose` |
+| `Info` | `Meta`, `L2Snapshot`, `UserState`, `OpenOrders`, `UserFills`, `UserFees` |
+| `Exchange` | `Order`, `BulkOrders`, `BulkModify`, `CancelTwap`, `MarketOpen`, `MarketClose` |
 
-完整接口目录见 [功能总览](docs/FEATURES.md)。
+For the full API catalog, see the [Feature overview](docs/FEATURES.md).
 
-## 安装
+## Installation
 
 ```bash
 go get github.com/svpchain/apollo-go-sdk@latest
 ```
 
-`@latest` 取最新正式版，并把具体版本写入你项目的 `go.mod`。需要固定版本时写明版本号，例如 `go get github.com/svpchain/apollo-go-sdk@v1.0.0`。各版本的变更见 [版本记录](CHANGELOG.md)。
+`@latest` fetches the latest stable release and records the exact version in your project's `go.mod`. To pin a version, specify it explicitly, for example `go get github.com/svpchain/apollo-go-sdk@v1.0.0`. Changes in each release are listed in the [Changelog](CHANGELOG.md).
 
-`endpoint` 使用目标环境提供的完整 Apollo HTTP(S) JSON-RPC 地址，支持路径和查询参数。
+`endpoint` is the full Apollo HTTP(S) JSON-RPC URL provided by the target environment; paths and query parameters are supported.
 
-## 查询市场和账户
+## Query markets and accounts
 
 ```go
 import (
@@ -54,13 +56,13 @@ if err != nil {
 fmt.Println(book.Bids, book.Asks)
 ```
 
-查询不需要签名。`UserState(ctx, owner)` 按 owner 地址查询，`UserStateByID(ctx, account)` 按账户数字 ID 查询；`owner` 可以通过 `ParseAddress()` 解析。
+Queries do not require signing. `UserState(ctx, owner)` queries by owner address and `UserStateByID(ctx, account)` queries by numeric account ID; `owner` can be parsed with `ParseAddress()`.
 
-`OpenOrders(ctx, account, nil)` 查询全部市场。传 `&marketID` 则筛选指定市场，市场 0 是有效 ID。
+`OpenOrders(ctx, account, nil)` queries all markets. Pass `&marketID` to filter by a single market; market 0 is a valid ID.
 
-## 用已授权 agent 下单
+## Place orders with an approved agent
 
-`seed` 为 32 字节 Ed25519 种子，公钥需要事先由账户 owner 授权。交易账户使用链上数字 ID，`Coin` 使用市场完整 ticker。
+`seed` is a 32-byte Ed25519 seed whose public key must first be approved by the account owner. Trading accounts use their on-chain numeric ID, and `Coin` uses the market's full ticker.
 
 ```go
 signer, err := apollo.NewAgentSigner(seed, 1)
@@ -88,13 +90,13 @@ for _, item := range response.Statuses {
 }
 ```
 
-`NewExchange` 不发网络请求。交易方法会检查市场规则、链身份、签名授权、动作额度和 nonce。首次连接后会固定目标链的创世哈希，后续签名与提交重新核对。
+`NewExchange` makes no network requests. Trading methods check market rules, chain identity, signing authorization, action allowance and nonce. On first connection the SDK pins the target chain's genesis hash and re-verifies it on every subsequent sign and submit.
 
-默认等待执行最多 15 秒。`response.Successful()` 表示所有动作执行成功；订单实际成交应继续查询挂单与成交记录。
+By default it waits up to 15 seconds for execution. `response.Successful()` means all actions executed successfully; to see actual order fills, keep querying open orders and fills.
 
-## 常用交易
+## Common trades
 
-以下调用分别执行对应操作，实际接入时按业务选择，并检查每次返回的 `err` 和逐项状态。
+Each call below performs the corresponding operation. Pick the ones your integration needs, and check the returned `err` and every per-item status.
 
 ```go
 response, err := exchange.MarketOpen(ctx, apollo.MarketOrderRequest{
@@ -126,11 +128,11 @@ if err != nil {
 fmt.Println(response.Statuses)
 ```
 
-市价意图使用 IOC 保护限价，默认滑点为 1%。平仓指定多空槽位和数量，`Isolated: true` 选择逐仓，默认全仓。
+Market intents use an IOC protective limit price, with a default slippage of 1%. Closing a position specifies the long/short slot and the size; `Isolated: true` selects isolated margin, and cross margin is the default.
 
-改单先撤旧单再创建新单；新单被拒时旧单可能已经撤销。批量逐项执行，结果需要逐项处理。
+Modifying an order cancels the old order first, then creates the new one; if the new order is rejected, the old one may already be canceled. Batches execute item by item, so handle results item by item.
 
-## 批量改单、TWAP 取消和费用
+## Bulk modify, TWAP cancel and fees
 
 ```go
 response, err := exchange.BulkModify(ctx, []apollo.ModifyOrderRequest{
@@ -154,9 +156,9 @@ if err != nil {
 fmt.Println(page.Summary.FeesPaid, page.Summary.Rebates, page.Summary.NetFees, page.Next)
 ```
 
-TWAP 取消使用父订单 ID，会取消计划及当前子单。费用按成交中的 MakerFee / TakerFee 统计；金额为微 USD 的十进制整数字符串，支持超出 int64 的汇总。`UserFees()` 返回当前页汇总，存在 `Next` 时继续分页。已取得成交记录可调用 `SummarizeFees()` 直接汇总。
+TWAP cancel takes the parent order ID and cancels both the schedule and the current child order. Fees are aggregated from MakerFee / TakerFee on fills; amounts are decimal integer strings in micro-USD, so totals beyond int64 are supported. `UserFees()` returns the summary for the current page; when `Next` is present, keep paginating. For fills you already have, call `SummarizeFees()` to aggregate them directly.
 
-## Owner 钱包与 agent 授权
+## Owner wallet and agent approval
 
 ```go
 ownerSigner, err := apollo.NewOwnerSigner(ownerPrivateKey)
@@ -180,9 +182,9 @@ if !approval.Successful() {
 }
 ```
 
-授权到期时间使用区块高度，0 表示无到期高度。`RevokeAgent(ctx, slot)` 撤销授权。钱包或 HSM 接入可使用 `NewWalletSigner(ownerAddress, callback)`，由回调完成签名。SDK 会核对返回签名与链上 owner。
+Authorization expiry is a block height; 0 means no expiry height. `RevokeAgent(ctx, slot)` revokes the authorization. For wallet or HSM integrations, use `NewWalletSigner(ownerAddress, callback)` and let the callback do the signing. The SDK verifies the returned signature against the on-chain owner.
 
-## 只准备，不广播
+## Prepare without broadcasting
 
 ```go
 prepared, err := exchange.PrepareOrder(ctx, apollo.CreateOrderRequest{
@@ -200,24 +202,24 @@ if err != nil {
 fmt.Println(response.Statuses)
 ```
 
-准备只查询和签名，提交需要显式调用。SDK 不自动重发交易。提交超时或响应丢失时，先使用原 account / nonce 查询结果，详见 [结果处理](docs/reference/RESULTS.md)。
+Prepare only queries and signs; submitting requires an explicit call. The SDK never resends transactions automatically. If a submit times out or the response is lost, first query the result using the original account / nonce; see [Results](docs/reference/RESULTS.md).
 
-## 文档与示例
+## Docs and examples
 
-- [功能总览](docs/FEATURES.md)
-- [API 参数与配置](docs/API.md)
-- [市场和账户查询](docs/reference/INFO.md)
-- [交易接口](docs/reference/EXCHANGE.md)
-- [历史与费用](docs/reference/HISTORY.md)
-- [结果与异常](docs/reference/RESULTS.md)
-- [并发、精度和接入](docs/USAGE.md)
-- [版本与运行环境](PROVENANCE.md)
-- [版本记录](CHANGELOG.md)
-- [命令行测试流程](examples/README.md)
+- [Feature overview](docs/FEATURES.md)
+- [API parameters and configuration](docs/API.md)
+- [Market and account queries](docs/reference/INFO.md)
+- [Trading API](docs/reference/EXCHANGE.md)
+- [History and fees](docs/reference/HISTORY.md)
+- [Results and errors](docs/reference/RESULTS.md)
+- [Concurrency, precision and integration](docs/USAGE.md)
+- [Versioning and runtime](PROVENANCE.md)
+- [Changelog](CHANGELOG.md)
+- [Command-line test workflow](examples/README.md)
 
-`examples/info` 只读查询；`examples/offline` 演示离线签名；`examples/order` 提供单笔订单示例。
+`examples/info` runs read-only queries; `examples/offline` demonstrates offline signing; `examples/order` provides a single-order example.
 
-`examples/trading` 直接读取 APOLLO_* 环境变量，通过 `-action orders / order / cancel / modify` 查询挂单或测试交易；默认只准备签名，显式 `-submit` 才广播。账户、RPC、创世哈希和密钥由使用方提供。
+`examples/trading` reads the APOLLO_* environment variables directly and uses `-action orders / order / cancel / modify` to query open orders or run test trades; by default it only prepares and signs, and broadcasts only with an explicit `-submit`. The account, RPC, genesis hash and keys are supplied by the user.
 
 ```bash
 go run ./examples/trading -action orders

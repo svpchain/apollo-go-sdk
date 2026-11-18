@@ -1,46 +1,48 @@
-# 命令行示例
+# Command-Line Examples
 
-在 Go SDK 仓库中运行，使用 Go 1.22 及以上。首次执行 go run 会下载 go.mod 中的依赖。
+English | [简体中文](README.zh-CN.md)
 
-## 环境配置
+Run these from the Go SDK repository with Go 1.22 or later. The first `go run` downloads the dependencies listed in go.mod.
 
-`examples/trading` 默认从 shell 中读取 APOLLO_* 环境变量，可通过调用方自己的配置文件导出。命令行同名参数优先于环境配置。
+## Environment configuration
 
-| 环境变量 | 对应参数 | 说明 |
+By default `examples/trading` reads the APOLLO_* environment variables from the shell; you can export them from your own config file. Command-line flags with the same name take precedence over the environment.
+
+| Environment variable | Flag | Description |
 | --- | --- | --- |
-| APOLLO_RPC_URL | — | Apollo HTTP(S) JSON-RPC 地址 |
-| APOLLO_ACCOUNT | -account | 非零账户数字 ID |
-| APOLLO_GENESIS_HASH | — | 可信创世哈希，签名操作必填 |
-| APOLLO_AGENT_SEED | — | 已授权 agent 的 32 字节 seed 十六进制 |
-| APOLLO_AGENT_SLOT | -slot | agent 槽位，默认 1 |
-| APOLLO_COIN | -coin | 市场完整 ticker；查单时为空表示全部市场 |
-| APOLLO_PRICE | -price | 十进制价格字符串 |
-| APOLLO_SIZE | -size | 基础币数量字符串 |
-| APOLLO_ORDER_ID | -order-id | 目标订单 ID，纯数字，不带 n |
+| APOLLO_RPC_URL | — | Apollo HTTP(S) JSON-RPC URL |
+| APOLLO_ACCOUNT | -account | Non-zero numeric account ID |
+| APOLLO_GENESIS_HASH | — | Trusted genesis hash; required for signing operations |
+| APOLLO_AGENT_SEED | — | Hex-encoded 32-byte seed of an approved agent |
+| APOLLO_AGENT_SLOT | -slot | Agent slot, default 1 |
+| APOLLO_COIN | -coin | Full market ticker; when querying orders, empty means all markets |
+| APOLLO_PRICE | -price | Decimal price string |
+| APOLLO_SIZE | -size | Base-asset size string |
+| APOLLO_ORDER_ID | -order-id | Target order ID, digits only, without the n suffix |
 
-配置不包含默认账户或私钥。查单不需要 agent seed；设置可信创世哈希时，查单也会核对目标链。每次运行交易操作会重新准备签名，保存实际提交那次的 nonce 和交易哈希。
+The configuration contains no default account or private key. Querying orders does not need an agent seed; when a trusted genesis hash is set, order queries also verify the target chain. Every run of a trading operation prepares and signs afresh; save the nonce and transaction hash of the run you actually submit.
 
-## 1. 查询链和市场
+## 1. Query the chain and markets
 
 ```bash
 go run ./examples/info
 ```
 
-只需要 APOLLO_RPC_URL，打印链身份、高度和市场列表。
+Requires only APOLLO_RPC_URL. Prints the chain identity, height and market list.
 
-## 2. 准备或提交订单
+## 2. Prepare or submit an order
 
 ```bash
-# 读取环境中的账户、市场、价格和数量，默认准备 Gtc 限价买单
+# Read account, market, price and size from the environment; by default prepare a Gtc limit buy order
 go run ./examples/trading -action order
 
-# 真实发送订单
+# Actually send the order
 go run ./examples/trading -action order -submit
 ```
 
-可以传 -sell 改为卖出。完整交易配置必填，价格和数量必须符合市场精度。准备成功不代表最终成交；提交后检查执行状态，并查询挂单和成交。
+Pass -sell to sell instead. The full trading configuration is required, and price and size must match the market's precision. A successful prepare does not mean the order is filled; after submitting, check the execution status and query open orders and fills.
 
-## 3. 查询挂单
+## 3. Query open orders
 
 ```bash
 go run ./examples/trading -action orders
@@ -48,43 +50,43 @@ go run ./examples/trading -action orders -coin BTC-USD
 go run ./examples/trading -action orders -order-id "$APOLLO_ORDER_ID"
 ```
 
-默认 action 为 orders。可按市场和订单 ID 筛选，输出订单 ID、市场、方向、价格、剩余数量及持仓槽位。价格和数量使用用户可读十进制格式。
+The default action is orders. You can filter by market and order ID. The output shows order ID, market, side, price, remaining size and position slot. Prices and sizes are shown in human-readable decimal format.
 
-## 4. 撤销指定订单
+## 4. Cancel a specific order
 
 ```bash
-# 准备撤单签名
+# Prepare the cancel signature
 go run ./examples/trading -action cancel -order-id "$APOLLO_ORDER_ID"
 
-# 真实发送撤单并查询撤单后的挂单
+# Actually send the cancel and query open orders afterwards
 go run ./examples/trading -action cancel -order-id "$APOLLO_ORDER_ID" -submit
 ```
 
-执行成功后输出 `Still open after cancellation: false`，然后可重复查单确认。撤单响应中的 nonce 属于新撤单动作，目标订单 ID 保持不变。
+On success it prints `Still open after cancellation: false`; you can then query orders again to confirm. The nonce in the cancel response belongs to the new cancel action; the target order ID is unchanged.
 
-## 5. 修改指定订单
+## 5. Modify a specific order
 
 ```bash
-# 准备修改价格和数量
+# Prepare a price and size modification
 go run ./examples/trading -action modify -order-id "$APOLLO_ORDER_ID" -price 65100 -size 0.001
 
-# 真实提交修改
+# Actually submit the modification
 go run ./examples/trading -action modify -order-id "$APOLLO_ORDER_ID" -price 65100 -size 0.001 -submit
 ```
 
-改单先撤旧单再建新单，新单失败时旧单可能已撤。成功替换后从执行结果的 order_id 获取新 ID，后续查询和撤单使用新 ID。
+Modifying an order cancels the old order first, then creates the new one; if the new order fails, the old one may already be canceled. After a successful replacement, take the new ID from the order_id in the execution result, and use the new ID for later queries and cancels.
 
-## 结果和异常
+## Results and errors
 
-交易默认只准备并签名，打印哈希、nonce 和 Not broadcast。显式 -submit 才广播。
+By default, trades are only prepared and signed, printing the hash, the nonce and Not broadcast. Broadcasting happens only with an explicit -submit.
 
-提交后分别输出接收状态、执行状态及执行详情。未确认成功时工具以非零状态退出，并保留可用于对账的 account / nonce / hash；不会自动重发。执行成功和订单实际成交分别判断。
+After submitting, the tool prints the accepted status, execution status and execution details separately. If success is not confirmed, the tool exits with a non-zero status and keeps the account / nonce / hash for reconciliation; it never resends automatically. Successful execution and actual order fills are judged separately.
 
-## 其他示例
+## Other examples
 
-- `examples/offline`：使用临时生成的 key 离线签名。
-- `examples/order`：单笔下单示例，通过 -account、-coin、-price、-size 显式传订单参数。
-- `examples/trading`：按 -action 选择完整命令行测试流程。
+- `examples/offline`: offline signing with a temporarily generated key.
+- `examples/order`: single-order example; pass order parameters explicitly via -account, -coin, -price, -size.
+- `examples/trading`: the full command-line test workflow, selected with -action.
 
 ```bash
 go run ./examples/trading -h
@@ -93,4 +95,4 @@ go test -race ./...
 go vet ./...
 ```
 
-仓库测试使用本地模拟节点与测试密钥，目标链测试由调用方显式运行。
+Repository tests use a local mock node and test keys; tests against a target chain are run explicitly by the caller.

@@ -1,12 +1,18 @@
-# 版本记录
+# Changelog
+
+English | [简体中文](CHANGELOG.zh-CN.md)
+
+## 1.0.1
+
+- Added English documentation; English is now the default. The Chinese docs moved to `README.zh-CN.md` and `docs/zh-CN/`, with a language switcher at the top of every page.
 
 ## 1.0.0
 
-首个公开版本。
+First public release.
 
-- `Info` 查询：市场、盘口、行情、账户、仓位、挂单、成交、费用汇总及历史数据。
-- `Exchange` 交易：限价、条件、市价 IOC、批量下单 / 改单 / 撤单、平仓、杠杆、逐仓保证金、TWAP、分批订单及 agent 授权。
-- owner 私钥、钱包 / HSM 回调和 agent 三种签名方式。
-- 准备与提交分离、链身份检查和执行结果跟踪。
-- 精确整数与十进制换算、并发 nonce 分配和请求取消。
-- 命令行示例 trading：查单、下单、改单和撤单，默认只准备签名，显式提交后跟踪结果。
+- `Info` queries: markets, order book, market data, accounts, positions, open orders, fills, fee summaries and historical data.
+- `Exchange` trading: limit, trigger, market IOC, bulk place / modify / cancel, close position, leverage, isolated margin, TWAP, scaled orders and agent approval.
+- Three signing modes: owner private key, wallet / HSM callback, and agent.
+- Separate prepare and submit, chain identity checks, and execution tracking.
+- Exact integer and decimal conversion, concurrent nonce allocation, and request cancellation.
+- Command-line example trading: query, place, modify and cancel orders; by default it only prepares and signs, and tracks results after an explicit submit.

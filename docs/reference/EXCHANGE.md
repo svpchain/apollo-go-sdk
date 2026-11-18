@@ -1,10 +1,12 @@
-# 交易接口
+# Trading API
 
-下面使用已经初始化的 `exchange`。每个方法都返回 `*OrderResponse, error`，业务逐项检查 Statuses；owner 授权操作使用 owner 签名客户端。
+English | [简体中文](../zh-CN/reference/EXCHANGE.md)
 
-## 单笔和批量下单：Order / BulkOrders
+The examples below use an already initialized `exchange`. Every method returns `*OrderResponse, error`; check Statuses item by item. Owner authorization operations use a client with an owner signer.
 
-**用途**：提交指定价格和数量的委托，选择 Gtc、Ioc 或 PostOnly。
+## Single and bulk orders: Order / BulkOrders
+
+**Use**: submit orders at a given price and size, choosing Gtc, Ioc or PostOnly.
 
 ```go
 response, err := exchange.BulkOrders(ctx, []apollo.CreateOrderRequest{
@@ -19,15 +21,15 @@ for _, status := range response.Statuses {
 }
 ```
 
-单笔使用 `Order(ctx, request)`，批量使用请求数组，最多 20,000 项并受请求大小限制。Coin 是市场完整 ticker，Price / Size 使用十进制字符串，必须满足 tick / step。
+Use `Order(ctx, request)` for a single order and a request slice for a batch, up to 20,000 items and subject to the request size limit. Coin is the full market ticker; Price / Size are decimal strings and must satisfy tick / step.
 
-OrderType.Limit.TIF 默认为 Gtc；Position 按方向推导，也可明确指定 Long / Short；Isolated 默认 false 表示全仓。完整字段见 [API](../API.md#下单参数)。
+OrderType.Limit.TIF defaults to Gtc; Position is derived from the side but can also be set explicitly to Long / Short; Isolated defaults to false, meaning cross margin. For all fields, see [API](../API.md#order-parameters).
 
-SDK 先校验整批再准备签名，广播后的接收和执行结果按输入顺序返回，可能部分成功。限价动作成功后，继续通过挂单和成交查询确认业务状态。
+The SDK validates the whole batch before preparing and signing. After broadcast, accepted and execution results are returned in input order and may partially succeed. After a limit action succeeds, keep querying open orders and fills to confirm the business state.
 
-## 市价开仓和平仓：MarketOpen / MarketClose
+## Market open and close: MarketOpen / MarketClose
 
-**用途**：按当前价格尝试成交，并限制可接受滑点。
+**Use**: try to fill at the current price while limiting acceptable slippage.
 
 ```go
 opened, err := exchange.MarketOpen(ctx, apollo.MarketOrderRequest{
@@ -45,13 +47,13 @@ if err != nil {
 fmt.Println(opened.Statuses, closed.Statuses)
 ```
 
-市价意图使用 IOC 保护限价。Slippage 是比例字符串，默认 0.01，范围为大于等于 0、小于 1。ReferencePrice 可显式传参考价，省略时取对手盘最佳价，空盘口回退 mark。
+Market intents use an IOC protective limit price. Slippage is a ratio string, default 0.01, in the range greater than or equal to 0 and less than 1. ReferencePrice can be passed explicitly as the reference price; when omitted, the best opposite-side price is used, falling back to the mark price if the book is empty.
 
-平仓必须提供 Position 和 Size，SDK 自动确定方向并只减仓。实际成交量以成交及剩余持仓为准。
+Closing a position requires Position and Size; the SDK determines the side automatically and makes the order reduce-only. The actual filled size is determined by fills and the remaining position.
 
-## 止盈止损：OrderType.Trigger
+## Take profit / stop loss: OrderType.Trigger
 
-**用途**：建立触发市价或触发限价订单。
+**Use**: create trigger market or trigger limit orders.
 
 ```go
 response, err := exchange.Order(ctx, apollo.CreateOrderRequest{
@@ -67,13 +69,13 @@ if err != nil {
 fmt.Println(response.Statuses)
 ```
 
-TriggerPrice 是触发价，必须符合 tick。TPSL 为 tp 止盈或 sl 止损。IsMarket 为 false 时同时提供 Price，表示触发后的限价。
+TriggerPrice is the trigger price and must match the tick. TPSL is tp for take profit or sl for stop loss. When IsMarket is false, also provide Price, the limit price after triggering.
 
-返回触发订单创建动作的结果。创建成功、触发和成交是不同阶段；多个订单分别返回自己的标识和执行结果。
+Returns the result of the trigger order creation action. Successful creation, triggering and filling are separate stages; multiple orders each return their own identifiers and execution results.
 
-## 撤单：Cancel / BulkCancel / CancelAll
+## Cancel orders: Cancel / BulkCancel / CancelAll
 
-**用途**：撤销指定委托、多个委托、某市场或全部市场委托。
+**Use**: cancel a specific order, multiple orders, or all orders in one market or in all markets.
 
 ```go
 response, err := exchange.BulkCancel(ctx, []apollo.CancelOrderRequest{
@@ -91,13 +93,13 @@ if err != nil {
 fmt.Println(response.Statuses)
 ```
 
-单笔使用 Cancel。CancelAll 的 coin 为空字符串时处理所有市场。OrderID 为 uint64。
+Use Cancel for a single order. When CancelAll's coin is an empty string, it applies to all markets. OrderID is a uint64.
 
-撤单免累计动作额度，但授权及 nonce 仍需有效。撤单与成交可能竞争，执行后继续核对挂单及实际成交。
+Canceling is exempt from the cumulative action allowance, but authorization and nonce must still be valid. Cancels can race with fills; after execution, keep checking open orders and actual fills.
 
-## 单笔和批量改单：ModifyOrder / BulkModify
+## Single and bulk modify: ModifyOrder / BulkModify
 
-**用途**：替换旧订单的价格和数量。
+**Use**: replace an existing order's price and size.
 
 ```go
 response, err := exchange.BulkModify(ctx, []apollo.ModifyOrderRequest{
@@ -112,13 +114,13 @@ for _, item := range response.Statuses {
 }
 ```
 
-ModifyOrder 接收单个 ModifyOrderRequest，BulkModify 接收数组。字段为 Coin、OrderID、Price、Size，数量和价格必须符合市场精度。
+ModifyOrder takes a single ModifyOrderRequest; BulkModify takes a slice. The fields are Coin, OrderID, Price and Size; size and price must match market precision.
 
-批量先校验全部输入和总动作额度，再单次提交，逐项返回结果。新订单 ID 按新动作结果确认。改单先撤旧单再建新单，新单失败时旧单可能已撤；部分失败后不能直接重发整批。
+A batch first validates all inputs and the total action allowance, then submits once and returns per-item results. Confirm the new order ID from the new action's result. Modifying an order cancels the old order first, then creates the new one; if the new order fails, the old one may already be canceled. After a partial failure, do not simply resend the whole batch.
 
-## TWAP 创建和取消
+## TWAP create and cancel
 
-**用途**：创建按时间拆分的交易计划，或停止父计划和当前子单。
+**Use**: create a trading schedule split over time, or stop the parent schedule and its current child order.
 
 ```go
 response, err := exchange.TwapOrder(ctx, apollo.CreateTwapOrderRequest{
@@ -131,9 +133,9 @@ if err != nil {
 fmt.Println(response.Statuses)
 ```
 
-DurationS 和 IntervalS 按秒计，TolerancePPM 为价格容差，10,000 表示 1%，零值为 0%。Price 省略时由 oracle 和容差生成保护价格；完整时长、精度规则见 [API](../API.md#高级订单)。
+DurationS and IntervalS are in seconds; TolerancePPM is the price tolerance, where 10,000 means 1% and zero means 0%. When Price is omitted, the protective price is derived from the oracle and the tolerance; for full duration and precision rules, see [API](../API.md#advanced-orders).
 
-创建成功后保存父动作的 Prepared.Nonce。取消时使用它作为 OrderID：
+After successful creation, save the parent action's Prepared.Nonce. Use it as the OrderID when canceling:
 
 ```go
 response, err := exchange.CancelTwap(ctx, apollo.CancelOrderRequest{
@@ -145,11 +147,11 @@ if err != nil {
 fmt.Println(response.Statuses)
 ```
 
-取消父计划及当前子单，已成交部分仍然有效。取消免累计动作额度。父动作执行成功代表计划创建成功，实际成交继续查询成交和持仓。
+This cancels the parent schedule and the current child order; already filled portions remain in effect. Canceling is exempt from the cumulative action allowance. Successful execution of the parent action means the schedule was created; for actual fills, keep querying fills and positions.
 
-## 分批订单：ScaledOrder
+## Scaled orders: ScaledOrder
 
-**用途**：在价格区间内按分配规则建立多个子单。
+**Use**: create multiple child orders across a price range according to a distribution rule.
 
 ```go
 response, err := exchange.ScaledOrder(ctx, apollo.CreateScaledOrderRequest{
@@ -163,9 +165,9 @@ if err != nil {
 fmt.Println(response.Statuses)
 ```
 
-Size 为总数量，NumOrders 为 2–50。Profile 控制数量分配，Spacing 控制价格间距。每个子单仍需符合市场规则；动作成功和全部子单成交分别判断。
+Size is the total size and NumOrders is 2–50. Profile controls size distribution and Spacing controls price spacing. Each child order must still satisfy market rules; action success and all child orders being filled are judged separately.
 
-## 杠杆和逐仓保证金
+## Leverage and isolated margin
 
 ```go
 response, err := exchange.UpdateLeverage(ctx, "BTC-USD", "5")
@@ -180,10 +182,10 @@ if err != nil {
 fmt.Println(response.Statuses)
 ```
 
-杠杆使用十进制字符串，输入范围为 1–1,000,000，实际可用值受市场风控约束。保证金单位为 USD，最多 6 位小数，正数增加、负数减少；执行后重新查询账户核实设置。
+Leverage is a decimal string with an input range of 1–1,000,000; the actually usable value is constrained by market risk controls. Margin is in USD with at most 6 decimal places; positive adds, negative removes. After execution, query the account again to verify the setting.
 
-## agent 管理
+## Agent management
 
-`owner.ApproveAgent(ctx, slot, publicKey, expiry)` 授权交易 key；`owner.RevokeAgent(ctx, slot)` 撤销指定槽位。
+`owner.ApproveAgent(ctx, slot, publicKey, expiry)` approves a trading key; `owner.RevokeAgent(ctx, slot)` revokes the given slot.
 
-slot 为 1–4，publicKey 为 32 字节，expiry 是截止高度，0 表示无到期高度。确认授权动作执行成功后再使用 agent。创建 signer 及完整示例见 [README](../../README.md#owner-钱包与-agent-授权)。
+slot is 1–4, publicKey is 32 bytes, and expiry is the expiry height; 0 means no expiry height. Use the agent only after confirming the approval action executed successfully. For creating a signer and a full example, see the [README](../../README.md#owner-wallet-and-agent-approval).

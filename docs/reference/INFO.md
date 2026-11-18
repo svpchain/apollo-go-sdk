@@ -1,10 +1,12 @@
-# 市场和账户查询
+# Market and Account Queries
 
-`Info` 提供只读查询。使用 `NewInfo(endpoint, opts...)` 创建，所有方法接收 context，返回数据和 error。
+English | [简体中文](../zh-CN/reference/INFO.md)
 
-## 市场：Meta / Market
+`Info` provides read-only queries. Create it with `NewInfo(endpoint, opts...)`; every method takes a context and returns data and an error.
 
-**用途**：查找市场并读取状态、精度、mark 和公共配置。
+## Markets: Meta / Market
+
+**Use**: find markets and read their status, precision, mark price and public configuration.
 
 ```go
 meta, err := info.Meta(ctx)
@@ -19,13 +21,13 @@ fmt.Println(market.ID, market.Status, market.StepBaseQuantums, market.SubticksPe
 fmt.Println(meta.FeeTiers, meta.Funding)
 ```
 
-Meta 返回 Markets、LiquidityTiers、FeeTiers、Funding 和 At；Market 按完整 ticker 查找一个 Market，找不到返回错误。交易前确认市场状态为 MarketActive。
+Meta returns Markets, LiquidityTiers, FeeTiers, Funding and At; Market looks up a single Market by full ticker and returns an error if not found. Before trading, confirm the market status is MarketActive.
 
-## 盘口：L2Snapshot
+## Order book: L2Snapshot
 
-**用途**：获取聚合价格档位，展示订单簿或计算下单参考价。
+**Use**: get aggregated price levels to display the order book or compute a reference price for orders.
 
-`L2Snapshot(ctx, marketID, depth)` 的 depth 是每侧档位数，最大 1,000，0 使用节点默认 50。
+In `L2Snapshot(ctx, marketID, depth)`, depth is the number of levels per side, at most 1,000; 0 uses the node default of 50.
 
 ```go
 market, err := info.Market(ctx, "BTC-USD")
@@ -49,11 +51,11 @@ for _, level := range book.Bids {
 }
 ```
 
-返回 Bids、Asks、Market、At。买盘价格从高到低，卖盘从低到高；每档含 Price 和 Size。HTTP 查询返回当次快照，应用可按需轮询。
+Returns Bids, Asks, Market and At. Bids are sorted from high to low price, asks from low to high; each level has Price and Size. An HTTP query returns a snapshot at that moment; applications can poll as needed.
 
-## 行情：Ticker
+## Market data: Ticker
 
-**用途**：查询 mark、买卖一、最近价格及市场统计。
+**Use**: query the mark price, best bid/ask, latest price and market statistics.
 
 ```go
 ticker, err := info.Ticker(ctx, marketID)
@@ -63,11 +65,11 @@ if err != nil {
 fmt.Println(ticker.Mark, ticker.BestBid, ticker.BestAsk, ticker.FundingIndex)
 ```
 
-返回 Mark、可选 BestBid / BestAsk / LastPrice、成交统计、OpenInterest 和 FundingIndex 等。统计范围受节点实际运行及观察时间影响，FundingIndex 是市场累计资金费指数。可选价格使用指针，展示前检查是否为 nil。
+Returns Mark, optional BestBid / BestAsk / LastPrice, trade statistics, OpenInterest, FundingIndex and more. The statistics window depends on how long the node has actually been running and observing; FundingIndex is the market's cumulative funding index. Optional prices are pointers; check for nil before displaying.
 
-## 账户：UserState / UserStateByID
+## Accounts: UserState / UserStateByID
 
-**用途**：读取账户资产、风险和设置。
+**Use**: read account assets, risk and settings.
 
 ```go
 owner, err := apollo.ParseAddress(ownerAddress)
@@ -81,13 +83,13 @@ if err != nil {
 fmt.Println(state.Account, state.Collateral, state.Equity, state.MarginHeadroom, state.BelowMaintenance)
 ```
 
-`UserState(ctx, owner Address)` 按 owner 查询；`UserStateByID(ctx, accountID uint32)` 按账户 ID 查询。返回 Account、Owner、Collateral、Equity、MarginHeadroom、BelowMaintenance、Positions、Settings 和额度 / nonce 信息。
+`UserState(ctx, owner Address)` queries by owner; `UserStateByID(ctx, accountID uint32)` queries by account ID. Returns Account, Owner, Collateral, Equity, MarginHeadroom, BelowMaintenance, Positions, Settings and allowance / nonce information.
 
-资产金额以微 USD 计。MarginHeadroom 表示超过初始保证金需求的权益，后续交易仍需通过链上风控。账户不存在时返回节点错误。
+Asset amounts are in micro-USD. MarginHeadroom is the equity in excess of the initial margin requirement; subsequent trades must still pass on-chain risk checks. If the account does not exist, a node error is returned.
 
-## 持仓：Positions
+## Positions: Positions
 
-**用途**：读取多空数量、成本、资金费指数和逐仓保证金。
+**Use**: read long/short sizes, cost, funding index and isolated margin.
 
 ```go
 positions, err := info.Positions(ctx, accountID)
@@ -99,11 +101,11 @@ for _, position := range positions.Positions {
 }
 ```
 
-返回 Positions 和 At。数量使用市场基础币精度，逐仓保证金使用微 USD；按 Position.Side 区分多空槽位。
+Returns Positions and At. Sizes use the market's base-asset precision and isolated margin uses micro-USD; Position.Side distinguishes the long and short slots.
 
-## 挂单：OpenOrders
+## Open orders: OpenOrders
 
-**用途**：读取当前仍在订单簿中的委托，用于展示、撤单和对账。
+**Use**: read orders currently resting in the order book, for display, canceling and reconciliation.
 
 ```go
 orders, err := info.OpenOrders(ctx, accountID, &marketID)
@@ -115,20 +117,20 @@ for _, order := range orders.Orders {
 }
 ```
 
-market 传 nil 查询全部市场，传 &marketID 筛选指定市场，市场 0 是有效值。
+Pass nil as market to query all markets, or &marketID to filter by a specific market; market 0 is a valid value.
 
-返回 Orders 和 At，每项含 OrderID、Market、Side、Price、Remaining、Expiry、Position。Remaining 是剩余基础币整数数量，Expiry 是截止高度，0 为不设置。
+Returns Orders and At; each entry has OrderID, Market, Side, Price, Remaining, Expiry and Position. Remaining is the remaining base-asset integer quantity; Expiry is the expiry height, 0 for none.
 
-不在当前挂单中的委托，需要结合 [成交和历史](HISTORY.md) 核实结果；不能单独据此认定全部成交。
+For orders no longer among open orders, verify the result with [Fills and history](HISTORY.md); absence alone does not prove the order was fully filled.
 
-## 授权、额度和链状态
+## Authorization, allowance and chain status
 
-| 方法 | 返回重点 |
+| Method | Key fields returned |
 | --- | --- |
-| `Agents(ctx, accountID)` | Agents，每项包含 Slot、Key、Seq、Expiry |
-| `Nonce(ctx, accountID)` | LastNonce、Window |
-| `UserRateLimit(ctx, accountID)` | Used、Limit、Remaining |
-| `ChainInfo(ctx)` | ChainID、GenesisHash、ExecutedHeight 等 |
+| `Agents(ctx, accountID)` | Agents, each with Slot, Key, Seq, Expiry |
+| `Nonce(ctx, accountID)` | LastNonce, Window |
+| `UserRateLimit(ctx, accountID)` | Used, Limit, Remaining |
+| `ChainInfo(ctx)` | ChainID, GenesisHash, ExecutedHeight, etc. |
 
 ```go
 agents, err := info.Agents(ctx, accountID)
@@ -142,4 +144,4 @@ if err != nil {
 fmt.Println(agents.Agents, allowance.Remaining)
 ```
 
-授权到期按区块高度计，0 表示无到期高度。累计动作额度由 owner 和所有 agent 共享。
+Authorization expiry is measured in block height; 0 means no expiry height. The cumulative action allowance is shared by the owner and all agents.
