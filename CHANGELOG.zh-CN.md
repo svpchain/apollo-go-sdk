@@ -2,6 +2,10 @@
 
 [English](CHANGELOG.md) | 简体中文
 
+## 1.0.2
+
+- 与 TypeScript SDK 版本号保持一致；中文 README 改名为 `README_zh-CN.md`。无功能变更。
+
 ## 1.0.1
 
 - 新增英文文档并设为默认语言。中文文档移至 `README.zh-CN.md` 和 `docs/zh-CN/`，每页顶部可切换语言。

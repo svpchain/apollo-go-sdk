@@ -2,6 +2,10 @@
 
 English | [简体中文](CHANGELOG.zh-CN.md)
 
+## 1.0.2
+
+- Version aligned with the TypeScript SDK. The Chinese README is renamed to `README_zh-CN.md`. No functional changes.
+
 ## 1.0.1
 
 - Added English documentation; English is now the default. The Chinese docs moved to `README.zh-CN.md` and `docs/zh-CN/`, with a language switcher at the top of every page.

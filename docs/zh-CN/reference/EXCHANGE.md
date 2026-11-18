@@ -188,4 +188,4 @@ fmt.Println(response.Statuses)
 
 `owner.ApproveAgent(ctx, slot, publicKey, expiry)` 授权交易 key；`owner.RevokeAgent(ctx, slot)` 撤销指定槽位。
 
-slot 为 1–4，publicKey 为 32 字节，expiry 是截止高度，0 表示无到期高度。确认授权动作执行成功后再使用 agent。创建 signer 及完整示例见 [README](../../../README.zh-CN.md#owner-钱包与-agent-授权)。
+slot 为 1–4，publicKey 为 32 字节，expiry 是截止高度，0 表示无到期高度。确认授权动作执行成功后再使用 agent。创建 signer 及完整示例见 [README](../../../README_zh-CN.md#owner-钱包与-agent-授权)。

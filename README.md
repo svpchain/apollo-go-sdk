@@ -1,6 +1,6 @@
 # Apollo Go SDK
 
-English | [简体中文](README.zh-CN.md)
+English | [简体中文](README_zh-CN.md)
 
 The Go trading SDK for Apollo. Over HTTP JSON-RPC it provides market and account queries, placing, canceling and modifying orders, signing and authorization, and execution tracking. Prices, sizes and margin are decimal strings.
 
